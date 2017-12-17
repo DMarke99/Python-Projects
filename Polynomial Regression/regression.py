@@ -1,6 +1,9 @@
 #imports libraries
 import numpy as np
 import sympy as sym
+from numpy import transpose
+from numpy.linalg import det
+from numpy.linalg.linalg import LinAlgError
 
 #performs polynomial regression on data y and x, and returns the equation of best fit
 #y = p(x), where p is a polynomial of maximum degree n
@@ -16,14 +19,24 @@ def PolynomialRegression(y,x,n):
             
         #creates matrix of values corresponding to powers of x from 0 to n
         X = np.matrix([[k**i for i in range(n+1)] for k in x])
-
+        
         #matrix is X * X.transpose                
-        XX = np.dot(np.transpose(X),X)
+        XX = transpose(X)*X
+        
+        #finds eigenvectors and eigenvalues
+        lambdas, V =  np.linalg.eig(XX)
+        
+        #if zero is an eigenvalue, then there is a linear dependency: a non-trivial definition of 0
+        #this is better than relying on the program to raise a LinAlgError when attempting to invert XX
+        #because the method used to calculate inverse for larger matrices can be quite inaccurate
+        if any([abs(i) < 10**-13 for i in lambdas]) > 0:
+            raise LinAlgError("n")
         
         #in this model, y = Xb, where X is the matrix of powers of X, and b are their corresponding coefficients
         #it can be proven that the equation of best fit is given by b = (Xt * X)^-1(Xt * y)
-        b = XX.I*(np.transpose(X)*np.transpose(np.matrix(y)))
-        
+        Xy = transpose(X)*transpose(np.matrix(y))
+        b = XX.I*Xy
+
         #creates symbolic equation for polynomial
         x = sym.Symbol("x")
         
@@ -35,7 +48,7 @@ def PolynomialRegression(y,x,n):
         #returns polynomial
         return sym.expand(y)
     
-    except np.linalg.linalg.LinAlgError:
+    except LinAlgError:
         #LinAlgError occurs only when Xt X is not invertible
         #this occurs when the degree of the polynomial is too high
         #to combat this, reduce the degree of the polynomial by 1 and trying again
