@@ -19,7 +19,7 @@ def PolynomialRegression(y,x,n):
         #creates matrix of values corresponding to powers of x from 0 to n
         X = np.matrix([[k**i for i in range(n+1)] for k in x])
         
-        #matrix is X.transpose * X                
+        #matrix is Xt * X, where Xt is the transpose of X               
         XX = transpose(X)*X
         
         #finds eigenvectors and eigenvalues
@@ -28,7 +28,7 @@ def PolynomialRegression(y,x,n):
         #if zero is an eigenvalue, then there is a linear dependency: a non-trivial definition of 0
         #this is better than relying on the program to raise a LinAlgError when attempting to invert XX
         #because the method used to calculate inverse for larger matrices can be quite inaccurate
-        if any([abs(i) < 10**-13 for i in lambdas]) > 0:
+        if any([abs(i) < 10**-13 for i in lambdas]):
             raise LinAlgError("n")
         
         #in this model, y = Xb, where X is the matrix of powers of X, and b are their corresponding coefficients
