@@ -1,5 +1,5 @@
 # Polynomial Regression Script
-Contains a python script which returns the polynomial (p(x)) of best fit to given data.
+Contains a Python script which contains a function which returns the polynomial (p(x)) of best fit to given data.
 
 #### Inputs:
 - y: the dependent variable (y = [p(x<sub>1</sub>),p(x<sub>2</sub>),...,p(x<sub>i</sub>)])
