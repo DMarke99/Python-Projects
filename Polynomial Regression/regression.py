@@ -2,7 +2,6 @@
 import numpy as np
 import sympy as sym
 from numpy import transpose
-from numpy.linalg import det
 from numpy.linalg.linalg import LinAlgError
 
 #performs polynomial regression on data y and x, and returns the equation of best fit
