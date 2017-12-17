@@ -19,7 +19,7 @@ def PolynomialRegression(y,x,n):
         #creates matrix of values corresponding to powers of x from 0 to n
         X = np.matrix([[k**i for i in range(n+1)] for k in x])
         
-        #matrix is X * X.transpose                
+        #matrix is X.transpose * X                
         XX = transpose(X)*X
         
         #finds eigenvectors and eigenvalues
