@@ -1,6 +1,6 @@
 #Defines a mathematical vector class in Python
-from math import sqrt
-from math import acos
+#Import useful functions
+from math import sqrt, acos
 
 #Defines the Vector class
 class Vector:
