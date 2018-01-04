@@ -4,7 +4,7 @@ A fully functional Rubik's Cube coded in Python, equipped with all the standard 
 
 ## Prerequisites
 
-To open and run the project on your computer you will need
+To open and run the project on your computer you will need:
 
 ```
 Tkinter 8.5+ (Version 8.5.0 is used in the project)
@@ -47,9 +47,9 @@ y rotate: rotates the cube vertically. Ranges from -90 to 90 degrees.
 
 ~ Other controls ~
 Scramble: scrambles the cube by performing 100 randomly selected moves.
-
-*moves are with respect to the red face being the front face and the white face being the top face. This is changed when performing moves x, y and z.
 ```
+Moves are made with respect to the red face being the front face and the white face being the top face.
+This is changed when performing moves x, y and z.
 
 #### Basic Usage
 The Rubix Cube will be displayed on the pygame window
