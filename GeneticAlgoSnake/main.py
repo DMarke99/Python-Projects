@@ -1,4 +1,10 @@
-from agent import breeder
+from agent import Population
 
-# runs breeding script to simulate population
-breeder(display_cutoff=50)
+# initialises a new population of agents
+population = Population(size=250)
+
+# trains the agents to play snake
+for i in range(10000):
+    population.train()
+    if i > 100:
+        population.run()

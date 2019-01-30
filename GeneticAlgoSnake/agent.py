@@ -12,6 +12,7 @@ class Agent:
         self.row, self.col = size
         self.game = SnakeGame(self.row, self.col)
 
+    # performs a move in the game according to the agent's recommendation
     def move(self):
 
         # predicts best move with neural net
@@ -39,7 +40,7 @@ class NeuralNetwork:
         self.shape = shape
 
         for i in range(len(shape)-1):
-            self.weights.append(np.random.randn(shape[i+1],shape[i]+1))
+            self.weights.append(np.random.randn(shape[i+1], shape[i]+1))
 
     def predict(self, X):
         y = X
@@ -55,113 +56,7 @@ class NeuralNetwork:
         return y
 
 
-# fitness function for agents
-def fitness(agent):
-    agent.game.reset()
-
-    avg_moves = 0
-    move_cap = 1000
-    score = 0
-    trials = 10
-
-    # gets average score over a number of trial runs
-    for _ in range(trials):
-
-        agent.game.reset()
-        moves = 0
-
-        while not agent.game.finished and moves <= move_cap:
-            moves += 1
-            agent.move()
-
-        score += agent.game.score()
-        avg_moves += moves
-
-    agent.game.reset()
-
-    return score/trials
-
-
-# breeds two agents and produces two children with a combination of the genetic material of their parents
-def reproduce(agent1, agent2):
-
-    # the chance of mutating a gene
-    epsilon = 0.1
-
-    assert agent1.NeuralNetwork.shape == agent2.NeuralNetwork.shape
-
-    shape = agent1.NeuralNetwork.shape
-    child1 = Agent(shape)
-    child2 = Agent(shape)
-
-    for i in range(len(shape)-1):
-        # swaps rows of genes in parents randomly in children
-        shape = np.shape(child1.NeuralNetwork.weights[i])
-        rows = shape[0]
-        u = np.repeat(np.random.randint(0, 2, (rows, 1)), shape[1], axis=1)
-
-        # determines elements to mutate
-        mutation = np.random.ranf(shape) < epsilon
-
-        child1.NeuralNetwork.weights[i] = (
-                agent1.NeuralNetwork.weights[i] * u +
-                agent2.NeuralNetwork.weights[i] * (1-u))
-
-        child1.NeuralNetwork.weights[i] += mutation * np.random.randn(shape[0], shape[1])
-
-        child2.NeuralNetwork.weights[i] = (
-                agent2.NeuralNetwork.weights[i] * u +
-                agent1.NeuralNetwork.weights[i] * (1-u))
-
-        child2.NeuralNetwork.weights[i] += mutation * np.random.randn(shape[0], shape[1])
-
-    return [child1, child2]
-
-
-# simulates a population of agents, breeding the top agents and destroying the bottom agents
-def breeder(population=150,
-            trials=10000,
-            display_cutoff=100,
-            cutoff=0.5,
-            no_of_displays=2):
-
-    # randomly generates population of agents
-    agents = [Agent() for _ in range(population)]
-
-    for t in range(trials):
-
-        # generates score for each agent in parallel
-        pool = Pool(3)
-        scores = pool.map(fitness, agents)
-        print("Trial", t + 1, end=" | ")
-        print("Avg Score:", np.round(sum(scores)/len(agents), 3), end=" | ")
-        pool.close()
-        pool.join()
-
-        # culls all agents above cutoff
-        selected = np.argsort(scores)[int(population*cutoff):]
-        print("Best Performance:", np.round(scores[selected[-1]], 3))
-
-        # selects the agent with the highest score and plays random game with them
-        if t + 1 > display_cutoff:
-            for idx in range(no_of_displays):
-                AgentRenderer(agents[selected[-(idx + 1)]], cap=2000)
-
-        # breeds agents that were selected randomly to fill out rest of the population
-        breeding_pool = [agents[i] for i in selected]
-
-        children = [reproduce(
-            breeding_pool[np.random.randint(0, len(breeding_pool))],
-            breeding_pool[np.random.randint(0, len(breeding_pool))])
-            for _ in range(int((population - len(selected))/2))]
-
-        breeding_pool.extend([c for child in children for c in child])
-        agents = breeding_pool
-
-        pygame.time.wait(5)
-
-
-# SliderRenderer renders a Slider object
+# AgentRenderer renders a game for an agent
 class AgentRenderer:
 
     # initialises renderer
@@ -253,3 +148,110 @@ class AgentRenderer:
         rect2.size = (self.block_size/3, self.block_size/3)
         rect2.center = tuple(eye2)
         pygame.draw.rect(self.screen, (150, 150, 30), rect2)
+
+
+# class that represents a population of agents
+class Population:
+
+    def __init__(self,
+                 size=150,
+                 population_cutoff=0.5):
+
+        # saves population settings
+        self.size = size
+        self.population_cutoff = population_cutoff
+        self.move_cap = 1000
+        self.trials = 10
+        self.trial_no = 0
+        self.epsilon = 0.1
+
+        # initialises a random population of agents
+        self.agents = [Agent() for _ in range(size)]
+
+    # simulates a population of agents, breeding the top agents and destroying the bottom agents
+    def train(self, trials=1):
+        self.trial_no += 1
+
+        for t in range(trials):
+
+            # generates score for each agent in parallel
+            pool = Pool(3)
+            scores = pool.map(self.fitness, self.agents)
+            print("Trial", self.trial_no, end=" | ")
+            print("Avg Score:", np.round(sum(scores) / len(self.agents), 3), end=" | ")
+            pool.close()
+            pool.join()
+
+            # culls all agents above cutoff
+            selected = np.argsort(scores)[int(self.size * self.population_cutoff):]
+            print("Best Performance:", np.round(scores[selected[-1]], 3))
+
+            # breeds agents that were selected randomly to fill out rest of the population
+            breeding_pool = [self.agents[i] for i in selected]
+
+            children = [self.reproduce(
+                breeding_pool[np.random.randint(0, len(breeding_pool))],
+                breeding_pool[np.random.randint(0, len(breeding_pool))])
+                for _ in range(int((self.size - len(selected)) / 2))]
+
+            breeding_pool.extend([c for child in children for c in child])
+            self.agents = breeding_pool
+
+    # fitness function for agents
+    def fitness(self, agent):
+
+        score = 0
+
+        # gets average score over a number of trial runs
+        for _ in range(self.trials):
+
+            agent.game.reset()
+            moves = 0
+
+            while not agent.game.finished and moves <= self.move_cap:
+                moves += 1
+                agent.move()
+
+            score += agent.game.score()
+
+        agent.game.reset()
+
+        return score / self.trials
+
+    # breeds two agents and produces two children with a combination of the genetic material of their parents
+    def reproduce(self, agent1, agent2):
+
+        assert agent1.NeuralNetwork.shape == agent2.NeuralNetwork.shape
+
+        shape = agent1.NeuralNetwork.shape
+        child1 = Agent(shape)
+        child2 = Agent(shape)
+
+        for i in range(len(shape) - 1):
+
+            # swaps rows of genes in parents randomly in children
+            shape = np.shape(child1.NeuralNetwork.weights[i])
+            rows = shape[0]
+            u = np.repeat(np.random.randint(0, 2, (rows, 1)), shape[1], axis=1)
+
+            # determines elements to mutate
+            mutation = np.random.ranf(shape) < self.epsilon
+
+            child1.NeuralNetwork.weights[i] = (
+                    agent1.NeuralNetwork.weights[i] * u +
+                    agent2.NeuralNetwork.weights[i] * (1 - u))
+
+            child1.NeuralNetwork.weights[i] += mutation * np.random.randn(shape[0], shape[1])
+
+            child2.NeuralNetwork.weights[i] = (
+                    agent2.NeuralNetwork.weights[i] * u +
+                    agent1.NeuralNetwork.weights[i] * (1 - u))
+
+            child2.NeuralNetwork.weights[i] += mutation * np.random.randn(shape[0], shape[1])
+
+        return [child1, child2]
+
+    # runs a random trial for a given agent
+    def run(self, agent_idx=0):
+        AgentRenderer(self.agents[agent_idx])
+
